@@ -3,17 +3,18 @@
 
 #include "gba.h"
 
-struct position {
-    int x;
+typedef struct {
     int y;
-}
+    int x;
+} position;
 
-struct tetrimino {
+typedef struct {
     position pos;
     int size;
-    position states[4][4];
-    int color;
-}
+    const position (*states)[4][4];
+    int state;
+    u16 color;
+} tetrimino;
 
 /*
 * For example, for a Snake game, one could be:

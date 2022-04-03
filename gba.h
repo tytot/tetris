@@ -29,6 +29,7 @@ typedef unsigned char u8;
 #define BLUE COLOR(0, 0, 31)
 #define MAGENTA COLOR(31, 0, 31)
 #define CYAN COLOR(0, 31, 31)
+#define ORANGE COLOR(31, 10, 0)
 #define YELLOW COLOR(31, 31, 0)
 #define BLACK COLOR(0, 0, 0)
 #define GRAY COLOR(5, 5, 5)
@@ -61,7 +62,7 @@ extern volatile unsigned short *videoBuffer;
 // Remember that a button is recently pressed if it wasn't pressed in the last
 // input (oldButtons) but is pressed in the current input. Use the KEY_DOWN
 // macro to check if the button was pressed in the inputs.
-#define KEY_JUST_PRESSED(key, buttons, oldbuttons) (KEY_DOWN(key, buttons) && !KEY_DOWN(key, oldbuttons))
+#define KEY_JUST_PRESSED(key, buttons, oldbuttons) ((KEY_DOWN(key, buttons)) && (!KEY_DOWN(key, oldbuttons)))
 
 // ---------------------------------------------------------------------------
 //                       DMA
