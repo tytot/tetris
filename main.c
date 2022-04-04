@@ -25,9 +25,7 @@ int main(void) {
   /* TODO: */
   REG_DISPCNT = MODE3 | BG2_ENABLE;
 
-  position startPos = { 0, 0 };
-  tetrimino activeTetrimino = newTetrimino(TETRIMINO_Z, startPos);
-
+  activeTetrimino = newTetrimino(TETRIMINO_I);
   drawBoard();
   
   // Save current and previous state of button input.
@@ -42,29 +40,23 @@ int main(void) {
 
     waitForVBlank();
     
-    clearTetrimino(activeTetrimino);
+    undrawTetrimino();
     if (KEY_JUST_PRESSED(BUTTON_LEFT, currentButtons, previousButtons)) {
-        activeTetrimino.pos.x--;
+        moveTetrimino(LEFT);
     }
     if (KEY_JUST_PRESSED(BUTTON_RIGHT, currentButtons, previousButtons)) {
-        activeTetrimino.pos.x++;
+        moveTetrimino(RIGHT);
     }
     if (KEY_JUST_PRESSED(BUTTON_A, currentButtons, previousButtons)) {
-        activeTetrimino.state--;
-        if (activeTetrimino.state == -1) {
-            activeTetrimino.state = 3;
-        }
+        moveTetrimino(COUNTERCLOCKWISE);
     }
     if (KEY_JUST_PRESSED(BUTTON_B, currentButtons, previousButtons)) {
-        activeTetrimino.state++;
-        if (activeTetrimino.state == 4) {
-            activeTetrimino.state = 0;
-        }
+        moveTetrimino(CLOCKWISE);
     }
     if (vBlankCounter != 0 && vBlankCounter % 60 == 0) {
-        activeTetrimino.pos.y++;
+        moveTetrimino(DOWN);
     }
-    drawTetrimino(activeTetrimino);
+    drawTetrimino();
     /* TODO: */
     // Manipulate the state machine below as needed //
     // NOTE: Call waitForVBlank() before you draw

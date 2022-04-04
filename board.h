@@ -1,7 +1,7 @@
 #include "main.h"
 
-#ifndef TETRIMINOS_H
-#define TETRIMINOS_H
+#ifndef BOARD_H
+#define BOARD_H
 
 #define BOARD_HEIGHT 20
 #define BOARD_WIDTH 10
@@ -17,9 +17,20 @@
 #define TETRIMINO_T 5
 #define TETRIMINO_Z 6
 
-tetrimino newTetrimino(int type, position pos);
-void clearTetrimino(tetrimino tetrimino);
-void drawTetrimino(tetrimino tetrimino);
+extern tetrimino activeTetrimino;
+
+typedef enum {
+    LEFT,
+    RIGHT,
+    DOWN,
+    COUNTERCLOCKWISE,
+    CLOCKWISE
+} direction;
+
+tetrimino newTetrimino(int type);
+void moveTetrimino(direction direction);
+void undrawTetrimino(void);
+void drawTetrimino(void);
 
 void drawBoard(void);
 
