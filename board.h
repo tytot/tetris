@@ -17,8 +17,6 @@
 #define TETRIMINO_T 5
 #define TETRIMINO_Z 6
 
-extern tetrimino activeTetrimino;
-
 typedef enum {
     LEFT,
     RIGHT,
@@ -27,7 +25,8 @@ typedef enum {
     CLOCKWISE
 } direction;
 
-tetrimino newTetrimino(int type);
+void spawnTetrimino(void);
+void dropTetrimino(void);
 void moveTetrimino(direction direction);
 void undrawTetrimino(void);
 void drawTetrimino(void);

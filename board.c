@@ -7,7 +7,9 @@ const int boardHeight = BLOCK_SIZE * BOARD_HEIGHT;
 const int boardRow = (HEIGHT - (BLOCK_SIZE * BOARD_HEIGHT)) / 2;
 
 int board[BOARD_HEIGHT][BOARD_WIDTH];
+
 tetrimino activeTetrimino;
+tetrimino ghostTetrimino;
 
 const int tetriminoSizes[7] = { 4, 3, 3, 2, 3, 3, 3 };
 const position tetriminoStates[7][4][4] = { 
@@ -54,6 +56,15 @@ const position tetriminoStates[7][4][4] = {
         { { 1, 0 }, { 2, 0 }, { 0, 1 }, { 1, 1 } },
     }
 };
+const int tetriminoHeights[7][4] = { 
+    { 2, 4, 3, 4 },
+    { 2, 3, 3, 3 },
+    { 2, 3, 3, 3 },
+    { 2, 2, 2, 2 },
+    { 2, 3, 3, 3 },
+    { 2, 3, 3, 3 },
+    { 2, 3, 3, 3 }
+};
 const u16 tetriminoColors[7] = {
     CYAN, BLUE, ORANGE, YELLOW, GREEN, MAGENTA, RED
 };
@@ -66,9 +77,58 @@ tetrimino newTetrimino(int type) {
     pos.y = 0;
     tetrimino.pos = pos;
     tetrimino.states = &tetriminoStates[type];
+    tetrimino.heights = &tetriminoHeights[type];
     tetrimino.state = 0;
     tetrimino.color = tetriminoColors[type];
     return tetrimino;
+}
+
+void spawnTetrimino(void) {
+    int type = randint(0, 6);
+    activeTetrimino = newTetrimino(type);
+}
+
+int isTetriminoSet(void) {
+    if (activeTetrimino.pos.y + (*activeTetrimino.heights)[activeTetrimino.state] >= BOARD_HEIGHT) {
+        return 1;
+    }
+    for (int i = 0; i < 4; i++) {
+        position pos = (*activeTetrimino.states)[activeTetrimino.state][i];
+        if (board[activeTetrimino.pos.y + pos.y + 1][activeTetrimino.pos.x + pos.x]) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int isTetriminoColliding(tetrimino tetrimino) {
+    if (tetrimino.pos.y + (*tetrimino.heights)[tetrimino.state] > BOARD_HEIGHT) {
+        return 1;
+    }
+    if (tetrimino.pos.x + (*tetrimino.states)[tetrimino.state][0].x < 0 || tetrimino.pos.x + (*tetrimino.states)[tetrimino.state][3].x >= BOARD_WIDTH) {
+        return 1;
+    }    
+    for (int i = 0; i < 4; i++) {
+        position pos = (*tetrimino.states)[tetrimino.state][i];
+        if (board[tetrimino.pos.y + pos.y][tetrimino.pos.x + pos.x]) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int testXOffsets[5] = { 0, -1, 1, -2, 2 };
+void rotateTetrimino(int state) {
+    tetrimino testTetrimino = activeTetrimino;
+    testTetrimino.state = state;
+    int initialX = testTetrimino.pos.x;
+    for (int i = 0; i < 5; i++) {
+        testTetrimino.pos.x = initialX + testXOffsets[i];
+        if (!isTetriminoColliding(testTetrimino)) {
+            activeTetrimino = testTetrimino;
+            break;
+        }
+    }
 }
 
 void boundTetrimino(void) {
@@ -83,46 +143,69 @@ void boundTetrimino(void) {
     }
 }
 
-int isTetriminoSet(void) {
+void placeTetrimino(void) {
+    drawTetrimino();
     for (int i = 0; i < 4; i++) {
         position pos = (*activeTetrimino.states)[activeTetrimino.state][i];
-        if (pos.y + 1 == BOARD_HEIGHT || board[pos.y + 1][pos.x]) {
-            return 1;
-        }
+        board[activeTetrimino.pos.y + pos.y][activeTetrimino.pos.x + pos.x] = 1;
     }
-    return 0;
+    spawnTetrimino();
+}
+
+void dropTetrimino(void) {
+    activeTetrimino = ghostTetrimino;
+    placeTetrimino();
 }
 
 void moveTetrimino(direction direction) {
-    if (direction == LEFT) {
-        activeTetrimino.pos.x--;
-    } else if (direction == RIGHT) {
-        activeTetrimino.pos.x++;
-    } else if (direction == DOWN) {
-        activeTetrimino.pos.y++;
-    } else if (direction == COUNTERCLOCKWISE) {
-        activeTetrimino.state--;
-        if (activeTetrimino.state == -1) {
-            activeTetrimino.state = 3;
+    if (direction == DOWN) {
+        if (isTetriminoSet()) {
+            placeTetrimino();
+        } else {
+            activeTetrimino.pos.y++;
         }
-    } else if (direction == CLOCKWISE) {
-        activeTetrimino.state++;
-        if (activeTetrimino.state == 4) {
-            activeTetrimino.state = 0;
+    } else {
+        if (direction == LEFT) {
+            activeTetrimino.pos.x--;
+            boundTetrimino();
+        } else if (direction == RIGHT) {
+            activeTetrimino.pos.x++;
+            boundTetrimino();
+        } else {
+            int newState = activeTetrimino.state;
+            if (direction == COUNTERCLOCKWISE) {
+                newState--;
+                if (newState == -1) {
+                    newState = 3;
+                }
+            } else if (direction == CLOCKWISE) {
+                newState++;
+                if (newState == 4) {
+                    newState = 0;
+                }
+            }
+            rotateTetrimino(newState);
         }
     }
-    boundTetrimino();
 }
 
 void undrawTetrimino(void) {
-    int tetriminoX = (*activeTetrimino.states)[activeTetrimino.state][0].x;
-    int tetriminoWidth = ((*activeTetrimino.states)[activeTetrimino.state][3].x - tetriminoX) + 1;
-    drawRectDMA(BLOCK_SIZE * activeTetrimino.pos.y + boardRow, BLOCK_SIZE * (activeTetrimino.pos.x + tetriminoX) + boardCol, BLOCK_SIZE * tetriminoWidth, BLOCK_SIZE * activeTetrimino.size, BLACK);
+    for (int i = 0; i < 4; i++) {
+        position pos = (*activeTetrimino.states)[activeTetrimino.state][i];
+        drawRectDMA(BLOCK_SIZE * (ghostTetrimino.pos.y + pos.y) + boardRow, BLOCK_SIZE * (ghostTetrimino.pos.x + pos.x) + boardCol, BLOCK_SIZE, BLOCK_SIZE, BLACK);
+        drawRectDMA(BLOCK_SIZE * (activeTetrimino.pos.y + pos.y) + boardRow, BLOCK_SIZE * (activeTetrimino.pos.x + pos.x) + boardCol, BLOCK_SIZE, BLOCK_SIZE, BLACK);
+    }
 }
 
 void drawTetrimino(void) {
+    ghostTetrimino = activeTetrimino;
+    while (!isTetriminoColliding(ghostTetrimino)) {
+        ghostTetrimino.pos.y++;
+    }
+    ghostTetrimino.pos.y--;
     for (int i = 0; i < 4; i++) {
         position pos = (*activeTetrimino.states)[activeTetrimino.state][i];
+        drawRectDMA(BLOCK_SIZE * (ghostTetrimino.pos.y + pos.y) + boardRow, BLOCK_SIZE * (ghostTetrimino.pos.x + pos.x) + boardCol, BLOCK_SIZE, BLOCK_SIZE, GRAY);
         drawRectDMA(BLOCK_SIZE * (activeTetrimino.pos.y + pos.y) + boardRow, BLOCK_SIZE * (activeTetrimino.pos.x + pos.x) + boardCol, BLOCK_SIZE, BLOCK_SIZE, activeTetrimino.color);
     }
 }

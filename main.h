@@ -12,6 +12,7 @@ typedef struct {
     position pos;
     int size;
     const position (*states)[4][4];
+    const int (*heights)[4];
     int state;
     u16 color;
 } tetrimino;

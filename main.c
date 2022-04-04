@@ -25,8 +25,8 @@ int main(void) {
   /* TODO: */
   REG_DISPCNT = MODE3 | BG2_ENABLE;
 
-  activeTetrimino = newTetrimino(TETRIMINO_I);
   drawBoard();
+  spawnTetrimino();
   
   // Save current and previous state of button input.
   u32 previousButtons = BUTTONS;
@@ -53,7 +53,10 @@ int main(void) {
     if (KEY_JUST_PRESSED(BUTTON_B, currentButtons, previousButtons)) {
         moveTetrimino(CLOCKWISE);
     }
-    if (vBlankCounter != 0 && vBlankCounter % 60 == 0) {
+    if (KEY_JUST_PRESSED(BUTTON_UP, currentButtons, previousButtons)) {
+        dropTetrimino();
+    }
+    if ((vBlankCounter != 0 && vBlankCounter % 60 == 0) || KEY_JUST_PRESSED(BUTTON_DOWN, currentButtons, previousButtons)) {
         moveTetrimino(DOWN);
     }
     drawTetrimino();
