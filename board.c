@@ -1,5 +1,8 @@
+#include <stdio.h>
+
 #include "board.h"
 #include "main.h"
+#include "images/star.h"
 
 const int boardWidth = BLOCK_SIZE * BOARD_WIDTH;
 const int boardCol = (WIDTH - (BLOCK_SIZE * BOARD_WIDTH)) / 2;
@@ -7,6 +10,9 @@ const int boardHeight = BLOCK_SIZE * BOARD_HEIGHT;
 const int boardRow = (HEIGHT - (BLOCK_SIZE * BOARD_HEIGHT)) / 2;
 
 int board[BOARD_HEIGHT][BOARD_WIDTH];
+int gameOver = 0;
+int score = 0;
+int numStars = 0;
 
 tetrimino activeTetrimino;
 tetrimino ghostTetrimino;
@@ -68,6 +74,89 @@ const int tetriminoHeights[7][4] = {
 const u16 tetriminoColors[7] = {
     CYAN, BLUE, ORANGE, YELLOW, GREEN, MAGENTA, RED
 };
+
+void drawScore(void) {
+    char scoreBuffer[8];
+    snprintf(scoreBuffer, 9, "%08d", score);
+    drawRectDMA(boardRow + 10, boardWidth + boardCol + 10, 50, 10, BLACK);
+    drawString(boardRow + 10, boardWidth + boardCol + 10, scoreBuffer, WHITE);
+}
+
+void drawStar(void) {
+    drawImageDMA(boardRow + 20, boardWidth + boardCol + 10 + (10 * numStars), 11, 11, star);
+    numStars++;
+}
+
+void drawBoard(void) {
+    fillScreenDMA(BLACK);
+    drawRectDMA(boardRow - BORDER_WIDTH, boardCol - BORDER_WIDTH, boardWidth + 2 * BORDER_WIDTH, boardHeight + 2 * BORDER_WIDTH, WHITE);
+    drawRectDMA(boardRow, boardCol, boardWidth, boardHeight, BLACK);
+    char scoreLabel[] = "Score:";
+    drawString(boardRow, boardWidth + boardCol + 10, scoreLabel, WHITE);
+    drawScore();
+}
+
+void resetBoard(void) {
+    for (int y = 0; y < BOARD_HEIGHT; y++) {
+        for (int x = 0; x < BOARD_WIDTH; x++) {
+            board[y][x] = 0;
+        }
+    }
+    gameOver = 0;
+    score = 0;
+    numStars = 0;
+    drawBoard();
+    spawnTetrimino();
+}
+
+void addPoints(int points) {
+    score += points;
+    drawScore();
+    int newNumStars = score / STAR_THRESHOLD;
+    if (newNumStars > MAX_STARS) {
+        newNumStars = MAX_STARS;
+    }
+    if (newNumStars > numStars) {
+        for (int i = numStars; i < newNumStars; i++) {
+            drawStar();
+        }
+    }
+}
+
+void clearLines(void) {
+    int linesCleared = 0;
+    for (int y = BOARD_HEIGHT - 1; y >= 0; y--) {
+        int lineClear = 1;
+        for (int x = 0; x < BOARD_WIDTH; x++) {
+            if (linesCleared) {
+                board[y + linesCleared][x] = board[y][x];
+                drawRectDMA(BLOCK_SIZE * (y + linesCleared) + boardRow, BLOCK_SIZE * x + boardCol, BLOCK_SIZE, BLOCK_SIZE, board[y][x]);
+            }
+            if (!board[y][x]) {
+                lineClear = 0;
+            }
+        }
+        if (lineClear) {
+            linesCleared++;
+        }
+    }
+    if (linesCleared) {
+        for (int y = 0; y < linesCleared; y++) {
+            for (int x = 0; x < BOARD_WIDTH; x++) {
+                board[y][x] = 0;
+            }
+        }
+        if (linesCleared == 1) {
+            addPoints(40);
+        } else if (linesCleared == 2) {
+            addPoints(100);
+        } else if (linesCleared == 3) {
+            addPoints(300);
+        } else {
+            addPoints(1200);
+        }
+    }
+}
 
 tetrimino newTetrimino(int type) {
     tetrimino tetrimino;
@@ -143,13 +232,31 @@ void boundTetrimino(void) {
     }
 }
 
+int L(void) {
+    for (int i = 0; i < 4; i++) {
+        position pos = (*activeTetrimino.states)[activeTetrimino.state][i];
+        if (activeTetrimino.pos.y + pos.y < 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 void placeTetrimino(void) {
     drawTetrimino();
     for (int i = 0; i < 4; i++) {
         position pos = (*activeTetrimino.states)[activeTetrimino.state][i];
-        board[activeTetrimino.pos.y + pos.y][activeTetrimino.pos.x + pos.x] = 1;
+        board[activeTetrimino.pos.y + pos.y][activeTetrimino.pos.x + pos.x] = activeTetrimino.color;
     }
-    spawnTetrimino();
+    clearLines();
+    if (L()) {
+        gameOver = 1;
+    } else {
+        spawnTetrimino();
+        if (L() || isTetriminoColliding(activeTetrimino)) {
+            gameOver = 1;
+        }
+    }
 }
 
 void dropTetrimino(void) {
@@ -208,9 +315,4 @@ void drawTetrimino(void) {
         drawRectDMA(BLOCK_SIZE * (ghostTetrimino.pos.y + pos.y) + boardRow, BLOCK_SIZE * (ghostTetrimino.pos.x + pos.x) + boardCol, BLOCK_SIZE, BLOCK_SIZE, GRAY);
         drawRectDMA(BLOCK_SIZE * (activeTetrimino.pos.y + pos.y) + boardRow, BLOCK_SIZE * (activeTetrimino.pos.x + pos.x) + boardCol, BLOCK_SIZE, BLOCK_SIZE, activeTetrimino.color);
     }
-}
-
-void drawBoard(void) {
-    drawRectDMA(boardRow - BORDER_WIDTH, boardCol - BORDER_WIDTH, boardWidth + 2 * BORDER_WIDTH, boardHeight + 2 * BORDER_WIDTH, WHITE);
-    drawRectDMA(boardRow, boardCol, boardWidth, boardHeight, BLACK);
 }

@@ -17,6 +17,9 @@
 #define TETRIMINO_T 5
 #define TETRIMINO_Z 6
 
+#define STAR_THRESHOLD 100
+#define MAX_STARS 5
+
 typedef enum {
     LEFT,
     RIGHT,
@@ -32,5 +35,8 @@ void undrawTetrimino(void);
 void drawTetrimino(void);
 
 void drawBoard(void);
+void resetBoard(void);
+
+extern int gameOver;
 
 #endif
